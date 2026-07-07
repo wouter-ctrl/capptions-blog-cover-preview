@@ -266,6 +266,61 @@
     padding-bottom: 1px;
     align-self: flex-start;
   }
+
+  /* partnership lockup overlay, sits on top of the faint animated canvas backdrop */
+  .cs-lockup {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    pointer-events: none;
+  }
+
+  .cs-lockup .cx-icon {
+    width: 34px;
+    height: 34px;
+    flex-shrink: 0;
+  }
+
+  .cs-lockup .cx-connector {
+    width: 30px;
+    height: 2px;
+    position: relative;
+    background: rgba(226, 234, 250, 0.16);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .cs-lockup .cx-connector::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -40%;
+    width: 40%;
+    height: 100%;
+    background: var(--teal);
+    animation: cx-travel 2.4s ease-in-out infinite;
+  }
+
+  @keyframes cx-travel {
+    0% { left: -40%; }
+    50% { left: 100%; }
+    100% { left: -40%; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cs-lockup .cx-connector::after { animation: none; left: 30%; }
+  }
+
+  .cs-lockup .cx-client {
+    font-size: 19px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: rgba(226, 234, 250, 0.92);
+    white-space: nowrap;
+  }
 </style>
 
 <div class="wrap">
@@ -601,23 +656,27 @@
     canvases.push({ ctx: ctx, fn: v.fn, index: i });
   });
 
-  // Case-study covers reuse the same generative variants, with the customer's
-  // initials watermarked in the corner, so the format stays identical to a
-  // regular article card, image first, same cover system, not a separate template.
-  function withInitials(baseFn, initials) {
+  // Case-study covers: real Capptions mark x client wordmark, over a muted
+  // version of the same generative backdrop (dimmed so the lockup reads first,
+  // image still generated live, same system as the article covers).
+  var CAPPTIONS_ICON_SVG =
+    '<svg viewBox="0 0 547 545" xmlns="http://www.w3.org/2000/svg" class="cx-icon">' +
+    '<path d="M509.819 136.187H328.132V327.527H427.897C408.362 382.914 359.99 424.645 300.86 434.591V544.85C438.675 531.137 546.308 414.597 546.308 272.858C546.308 223.069 533.026 176.393 509.819 136.187Z" fill="#FF4444"/>' +
+    '<path d="M0.867004 272.858C0.867004 322.647 14.149 369.323 37.356 409.53H219.043V218.19H119.278C138.813 162.802 187.186 121.072 246.315 111.125V0.867188C108.501 14.5792 0.867004 131.12 0.867004 272.858Z" fill="#FF4444"/>' +
+    '</svg>';
+
+  function withDimBackdrop(baseFn) {
     return function (ctx, t, index) {
       baseFn(ctx, t, index);
-      ctx.font = '600 15px ' + getComputedStyle(document.body).fontFamily;
-      ctx.fillStyle = 'rgba(226, 234, 250, 0.55)';
-      ctx.textBaseline = 'alphabetic';
-      ctx.fillText(initials, 20, H - 20);
+      ctx.fillStyle = 'rgba(13, 18, 38, 0.62)';
+      ctx.fillRect(0, 0, W, H);
     };
   }
 
   var caseStudies = [
-    { customer: 'Ardagh Group', industry: 'Metal & glass packaging', result: '<strong>4&times; faster</strong> 5S audits across sites', variant: 3, initials: 'ARDAGH GROUP' },
-    { customer: 'Natures Pride', industry: 'Fresh produce, logistics', result: '<strong>50% time savings</strong> on inspection rounds', variant: 1, initials: 'NATURES PRIDE' },
-    { customer: 'Bosch', industry: 'Facility & building management', result: 'Faster, consistent safety reporting across sites', variant: 0, initials: 'BOSCH' }
+    { customer: 'Ardagh Group', industry: 'Metal & glass packaging', result: '<strong>4&times; faster</strong> 5S audits across sites', variant: 3 },
+    { customer: 'Natures Pride', industry: 'Fresh produce, logistics', result: '<strong>50% time savings</strong> on inspection rounds', variant: 1 },
+    { customer: 'Bosch', industry: 'Facility & building management', result: 'Faster, consistent safety reporting across sites', variant: 0 }
   ];
 
   var csGrid = document.getElementById('cs-grid');
@@ -625,14 +684,20 @@
     var card = document.createElement('div');
     card.className = 'cs-card';
     card.innerHTML =
-      '<div class="canvas-frame"><canvas width="' + W + '" height="' + H + '"></canvas></div>' +
+      '<div class="canvas-frame">' +
+        '<canvas width="' + W + '" height="' + H + '"></canvas>' +
+        '<div class="cs-lockup">' + CAPPTIONS_ICON_SVG +
+          '<div class="cx-connector"></div>' +
+          '<span class="cx-client">' + cs.customer + '</span>' +
+        '</div>' +
+      '</div>' +
       '<div class="card-meta"><h3>' + cs.customer + '</h3><span class="cs-industry">' + cs.industry + '</span></div>' +
       '<p class="cs-result">' + cs.result + '</p>' +
       '<a class="cs-cta" href="#">Read the full story &rarr;</a>';
     csGrid.appendChild(card);
     var ctx = card.querySelector('canvas').getContext('2d');
-    var baseFn = variants[cs.variant].fn;
-    canvases.push({ ctx: ctx, fn: withInitials(baseFn, cs.initials), index: 100 + i });
+    var baseFn = withDimBackdrop(variants[cs.variant].fn);
+    canvases.push({ ctx: ctx, fn: baseFn, index: 100 + i });
   });
 
   var start = performance.now();
