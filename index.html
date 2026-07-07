@@ -204,150 +204,67 @@
 
   .cs-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 24px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 28px;
   }
 
-  @media (max-width: 780px) {
+  @media (max-width: 860px) {
+    .cs-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (max-width: 560px) {
     .cs-grid { grid-template-columns: 1fr; }
   }
 
+  /* same card shape as the article covers: image first, meta below */
   .cs-card {
-    background: #fff;
-    border: 1px solid var(--paper-line);
-    border-radius: 12px;
-    overflow: hidden;
     display: flex;
     flex-direction: column;
-    box-shadow: 0 1px 2px hsl(224 40% 10% / 0.04);
+    gap: 12px;
   }
 
-  .cs-top {
-    background: var(--navy-deep);
-    padding: 24px 26px;
+  .cs-card .card-meta {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
-    gap: 16px;
+    gap: 12px;
   }
 
-  .cs-logo {
-    width: 44px;
-    height: 44px;
-    border-radius: 9px;
-    background: var(--teal);
-    color: var(--navy-deep);
-    font-weight: 800;
-    font-size: 17px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    font-family: var(--mono);
-  }
-
-  .cs-top-text {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .cs-customer {
-    color: #fff;
+  .cs-card h3 {
     font-size: 15px;
     font-weight: 650;
-    margin: 0 0 2px;
+    margin: 0;
+    color: var(--navy-deep);
+    letter-spacing: -0.01em;
   }
 
   .cs-industry {
     font-family: var(--mono);
     font-size: 10.5px;
-    letter-spacing: 0.08em;
+    letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--teal-soft);
+    color: hsl(224 14% 55%);
+    white-space: nowrap;
+  }
+
+  .cs-result {
+    font-size: 12.5px;
+    line-height: 1.5;
+    color: hsl(224 14% 46%);
     margin: 0;
   }
 
-  .cs-metric {
-    text-align: right;
-    flex-shrink: 0;
-  }
-
-  .cs-metric .num {
-    display: block;
-    font-size: 24px;
-    font-weight: 800;
-    color: var(--teal);
-    font-variant-numeric: tabular-nums;
-    line-height: 1;
-  }
-
-  .cs-metric .label {
-    display: block;
-    font-size: 10px;
-    color: hsl(224 12% 65%);
-    margin-top: 3px;
-    letter-spacing: 0.02em;
-  }
-
-  .cs-body {
-    padding: 22px 26px 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-
-  .cs-chsr {
-    display: grid;
-    grid-template-columns: 68px 1fr;
-    gap: 4px 14px;
-  }
-
-  .cs-chsr dt {
-    font-family: var(--mono);
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--teal);
-    font-weight: 650;
-    padding-top: 1px;
-  }
-
-  .cs-chsr dd {
-    margin: 0 0 10px;
-    font-size: 13px;
-    line-height: 1.55;
-    color: hsl(224 18% 34%);
-  }
-
-  .cs-quote {
-    border-left: 2.5px solid var(--teal);
-    padding-left: 14px;
-    font-size: 13.5px;
-    font-style: italic;
-    line-height: 1.55;
+  .cs-result strong {
     color: var(--navy-deep);
-  }
-
-  .cs-quote cite {
-    display: block;
-    margin-top: 6px;
-    font-style: normal;
-    font-size: 11.5px;
-    color: hsl(224 14% 48%);
   }
 
   .cs-cta {
-    margin-top: 2px;
-    align-self: flex-start;
-    font-size: 12.5px;
+    font-size: 12px;
     font-weight: 650;
     color: var(--navy-deep);
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
     text-decoration: none;
     border-bottom: 1.5px solid var(--teal);
-    padding-bottom: 2px;
+    padding-bottom: 1px;
+    align-self: flex-start;
   }
 </style>
 
@@ -358,7 +275,7 @@
       <h1>One generated cover, six motifs, zero cropped photos.</h1>
     </div>
     <div class="rationale">
-      <div><strong>Why generated, not photographic.</strong> No source image ever needs cropping, licensing, or sourcing &mdash; each cover renders live from the post's title and index.</div>
+      <div><strong>Why generated, not photographic.</strong> No source image ever needs cropping, licensing, or sourcing, each cover renders live from the post's title and index.</div>
       <div><strong>Palette.</strong> Capptions navy + one teal accent, matching the site and the Seveso landing page. No stock-photo drift.</div>
     </div>
   </div>
@@ -367,77 +284,19 @@
 
   <div class="section-head">
     <h2>Case studies get their own format</h2>
-    <p>Currently every customer story is just another blog post &mdash; same template, same generated cover, no way to tell "we already wrote about Ardagh" from a fresh article. That's structural, not a content problem: it's why the same case study kept reappearing under new slugs. Splitting it into its own type fixes that at the source.</p>
+    <p>Currently every customer story is just another blog post, same template, same generated cover, no way to tell "we already wrote about Ardagh" from a fresh article. That's structural, not a content problem: it's why the same case study kept reappearing under new slugs. Splitting it into its own type fixes that at the source.</p>
   </div>
 
-  <div class="cs-grid">
-    <div class="cs-card">
-      <div class="cs-top">
-        <div class="cs-logo">AG</div>
-        <div class="cs-top-text">
-          <p class="cs-customer">Ardagh Group</p>
-          <p class="cs-industry">Metal &amp; glass packaging</p>
-        </div>
-        <div class="cs-metric">
-          <span class="num">4&times;</span>
-          <span class="label">faster audits</span>
-        </div>
-      </div>
-      <div class="cs-body">
-        <dl class="cs-chsr">
-          <dt>Challenge</dt>
-          <dd>5S audits across multiple sites ran on paper checklists &mdash; slow to complete, slower to consolidate into a site-wide picture.</dd>
-          <dt>Solution</dt>
-          <dd>Rolled out Capptions' 5S audit workflow with standardized checklists and instant site-level reporting.</dd>
-          <dt>Result</dt>
-          <dd>Audit administration time cut to a quarter of what it was, with consistent scoring across sites.</dd>
-        </dl>
-        <blockquote class="cs-quote">
-          "We finally see all our sites the same way &mdash; not five different spreadsheets."
-          <cite>&mdash; Placeholder quote, swap for the real one before publish</cite>
-        </blockquote>
-        <a class="cs-cta" href="#">Read the full story &rarr;</a>
-      </div>
-    </div>
-
-    <div class="cs-card">
-      <div class="cs-top">
-        <div class="cs-logo">NP</div>
-        <div class="cs-top-text">
-          <p class="cs-customer">Natures Pride</p>
-          <p class="cs-industry">Fresh produce, logistics</p>
-        </div>
-        <div class="cs-metric">
-          <span class="num">50%</span>
-          <span class="label">time savings</span>
-        </div>
-      </div>
-      <div class="cs-body">
-        <dl class="cs-chsr">
-          <dt>Challenge</dt>
-          <dd>Inspection rounds across warehouses and cold storage relied on manual forms, hard to track and slow to close out.</dd>
-          <dt>Solution</dt>
-          <dd>Digitized inspection workflows with mobile-first checklists and automatic follow-up assignment.</dd>
-          <dt>Result</dt>
-          <dd>Inspection time halved, with faster corrective-action turnaround across sites.</dd>
-        </dl>
-        <blockquote class="cs-quote">
-          "Placeholder quote &mdash; pull the real one from the customer interview before this goes live."
-          <cite>&mdash; Natures Pride, Operations</cite>
-        </blockquote>
-        <a class="cs-cta" href="#">Read the full story &rarr;</a>
-      </div>
-    </div>
-  </div>
+  <div class="cs-grid" id="cs-grid"></div>
 
   <div class="footer-note">
     <div>
       <h4>Rotation logic</h4>
-      Each post picks its variant from <code>hash(slug) % 6</code>, so a given article always renders the same cover on rebuild, but the sequence across the blog index feels varied rather than repetitive. Seeded per-post, not per-load &mdash; no flicker between visits.
+      Each post picks its variant from <code>hash(slug) % 6</code>, so a given article always renders the same cover on rebuild, but the sequence across the blog index feels varied rather than repetitive. Seeded per-post, not per-load, no flicker between visits.
     </div>
     <div>
       <h4>Build notes</h4>
-      Rendered on <code>&lt;canvas&gt;</code>, no external image requests. Respects <code>prefers-reduced-motion</code> (drawn once, static). Same component drives both the blog index card and the post detail hero &mdash; fixing the crop bug at the root by removing the raster image entirely.
+      Rendered on <code>&lt;canvas&gt;</code>, no external image requests. Respects <code>prefers-reduced-motion</code> (drawn once, static). Same component drives both the blog index card and the post detail hero, fixing the crop bug at the root by removing the raster image entirely.
     </div>
   </div>
 </div>
@@ -719,12 +578,12 @@
   }
 
   var variants = [
-    { name: 'Audit grid', fn: drawAuditGrid, blurb: 'Blueprint grid with a checked cell &mdash; for audit, checklist, and management-system posts.' },
-    { name: 'Signal beacon', fn: drawBeacon, blurb: 'Concentric rings around a status core &mdash; echoes the stoplicht motif from the Seveso landing page.' },
-    { name: 'Data stream', fn: drawDataStream, blurb: 'Scanlines with drifting metric ticks &mdash; for compliance-tracking and reporting topics.' },
-    { name: 'Infrastructure network', fn: drawNetwork, blurb: 'Connected nodes &mdash; the VBS-as-system metaphor, for platform and integration posts.' },
-    { name: 'Document stack', fn: drawDocStack, blurb: 'Layered certificates with a folded corner &mdash; for standards, certification, and policy posts.' },
-    { name: 'Zoning contour', fn: drawContour, blurb: 'Topographic hazard-perimeter lines &mdash; for Seveso/BRZO risk-zoning and industrial-site content.' }
+    { name: 'Audit grid', fn: drawAuditGrid, blurb: 'Blueprint grid with a checked cell, for audit, checklist, and management-system posts.' },
+    { name: 'Signal beacon', fn: drawBeacon, blurb: 'Concentric rings around a status core, echoes the stoplicht motif from the Seveso landing page.' },
+    { name: 'Data stream', fn: drawDataStream, blurb: 'Scanlines with drifting metric ticks, for compliance-tracking and reporting topics.' },
+    { name: 'Infrastructure network', fn: drawNetwork, blurb: 'Connected nodes, the VBS-as-system metaphor, for platform and integration posts.' },
+    { name: 'Document stack', fn: drawDocStack, blurb: 'Layered certificates with a folded corner, for standards, certification, and policy posts.' },
+    { name: 'Zoning contour', fn: drawContour, blurb: 'Topographic hazard-perimeter lines, for Seveso/BRZO risk-zoning and industrial-site content.' }
   ];
 
   var grid = document.getElementById('grid');
@@ -740,6 +599,40 @@
     grid.appendChild(card);
     var ctx = card.querySelector('canvas').getContext('2d');
     canvases.push({ ctx: ctx, fn: v.fn, index: i });
+  });
+
+  // Case-study covers reuse the same generative variants, with the customer's
+  // initials watermarked in the corner, so the format stays identical to a
+  // regular article card, image first, same cover system, not a separate template.
+  function withInitials(baseFn, initials) {
+    return function (ctx, t, index) {
+      baseFn(ctx, t, index);
+      ctx.font = '600 15px ' + getComputedStyle(document.body).fontFamily;
+      ctx.fillStyle = 'rgba(226, 234, 250, 0.55)';
+      ctx.textBaseline = 'alphabetic';
+      ctx.fillText(initials, 20, H - 20);
+    };
+  }
+
+  var caseStudies = [
+    { customer: 'Ardagh Group', industry: 'Metal & glass packaging', result: '<strong>4&times; faster</strong> 5S audits across sites', variant: 3, initials: 'ARDAGH GROUP' },
+    { customer: 'Natures Pride', industry: 'Fresh produce, logistics', result: '<strong>50% time savings</strong> on inspection rounds', variant: 1, initials: 'NATURES PRIDE' },
+    { customer: 'Bosch', industry: 'Facility & building management', result: 'Faster, consistent safety reporting across sites', variant: 0, initials: 'BOSCH' }
+  ];
+
+  var csGrid = document.getElementById('cs-grid');
+  caseStudies.forEach(function (cs, i) {
+    var card = document.createElement('div');
+    card.className = 'cs-card';
+    card.innerHTML =
+      '<div class="canvas-frame"><canvas width="' + W + '" height="' + H + '"></canvas></div>' +
+      '<div class="card-meta"><h3>' + cs.customer + '</h3><span class="cs-industry">' + cs.industry + '</span></div>' +
+      '<p class="cs-result">' + cs.result + '</p>' +
+      '<a class="cs-cta" href="#">Read the full story &rarr;</a>';
+    csGrid.appendChild(card);
+    var ctx = card.querySelector('canvas').getContext('2d');
+    var baseFn = variants[cs.variant].fn;
+    canvases.push({ ctx: ctx, fn: withInitials(baseFn, cs.initials), index: 100 + i });
   });
 
   var start = performance.now();
