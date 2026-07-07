@@ -667,16 +667,20 @@
 
   function withDimBackdrop(baseFn) {
     return function (ctx, t, index) {
-      baseFn(ctx, t, index);
-      ctx.fillStyle = 'rgba(13, 18, 38, 0.62)';
+      // slowed way down and dimmed hard so the logo lockup reads first,
+      // motion is felt more than seen
+      baseFn(ctx, t * 0.22, index);
+      ctx.fillStyle = 'rgba(13, 18, 38, 0.78)';
       ctx.fillRect(0, 0, W, H);
     };
   }
 
+  // ambient patterns only, no bold single-shape variant (audit checkmark,
+  // beacon core) that would compete with the logo lockup on top
   var caseStudies = [
     { customer: 'Ardagh Group', industry: 'Metal & glass packaging', result: '<strong>4&times; faster</strong> 5S audits across sites', variant: 3 },
-    { customer: 'Natures Pride', industry: 'Fresh produce, logistics', result: '<strong>50% time savings</strong> on inspection rounds', variant: 1 },
-    { customer: 'Bosch', industry: 'Facility & building management', result: 'Faster, consistent safety reporting across sites', variant: 0 }
+    { customer: 'Natures Pride', industry: 'Fresh produce, logistics', result: '<strong>50% time savings</strong> on inspection rounds', variant: 2 },
+    { customer: 'Bosch', industry: 'Facility & building management', result: 'Faster, consistent safety reporting across sites', variant: 5 }
   ];
 
   var csGrid = document.getElementById('cs-grid');
