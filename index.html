@@ -578,39 +578,80 @@
     bgWash(ctx, index);
     var cx = W * 0.5, cy = H * 0.56;
     var sheets = 4;
-    var breathe = reduceMotion ? 0.5 : (Math.sin(t * 0.5) + 1) / 2; // 0..1, slow ease back and forth
+    // smoothstep easing on the sine, so the breathing has a soft rest at each
+    // end instead of the constant-velocity feel of a raw sine wave
+    var raw = reduceMotion ? 0.5 : (Math.sin(t * 0.45) + 1) / 2;
+    var breathe = raw * raw * (3 - 2 * raw);
+
     for (var i = sheets - 1; i >= 0; i--) {
-      var spread = 0.4 + breathe * 0.6; // how open the fan is right now
-      var offset = i * 14 * spread;
-      var fanAngle = (i - (sheets - 1) / 2) * 0.05 * spread;
+      var spread = 0.4 + breathe * 0.6;
+      var offset = i * 15 * spread;
+      var fanAngle = (i - (sheets - 1) / 2) * 0.055 * spread;
+      var w = 212, h = 152, fold = 24, radius = 6;
+
       ctx.save();
       ctx.translate(cx - offset, cy - offset * 0.6);
       ctx.rotate(fanAngle);
-      var w = 210, h = 150;
-      ctx.fillStyle = i === 0 ? '#ffffff' : 'rgba(255,255,255,' + (0.55 + i * 0.1) + ')';
+
+      // soft drop shadow per sheet, stronger on top, so the stack reads as
+      // physical layered paper rather than flat overlapping rectangles
+      ctx.shadowColor = 'rgba(20, 31, 72, ' + (0.22 - i * 0.045) + ')';
+      ctx.shadowBlur = 18 - i * 2;
+      ctx.shadowOffsetY = 8 - i * 1.2;
+
       ctx.beginPath();
-      ctx.moveTo(-w / 2, -h / 2);
-      ctx.lineTo(w / 2 - 22, -h / 2);
-      ctx.lineTo(w / 2, -h / 2 + 22);
-      ctx.lineTo(w / 2, h / 2);
-      ctx.lineTo(-w / 2, h / 2);
+      ctx.moveTo(-w / 2 + radius, -h / 2);
+      ctx.lineTo(w / 2 - fold, -h / 2);
+      ctx.lineTo(w / 2, -h / 2 + fold);
+      ctx.lineTo(w / 2, h / 2 - radius);
+      ctx.quadraticCurveTo(w / 2, h / 2, w / 2 - radius, h / 2);
+      ctx.lineTo(-w / 2 + radius, h / 2);
+      ctx.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - radius);
+      ctx.lineTo(-w / 2, -h / 2 + radius);
+      ctx.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + radius, -h / 2);
       ctx.closePath();
+
+      var sheetFill = i === 0 ? '#ffffff' : 'rgba(255,255,255,' + (0.5 + i * 0.12) + ')';
+      ctx.fillStyle = sheetFill;
       ctx.fill();
+      ctx.shadowColor = 'transparent'; // stroke shouldn't also cast a shadow
       ctx.strokeStyle = i === 0 ? palette.lineStrong : palette.line;
       ctx.lineWidth = 1.2;
       ctx.stroke();
+
+      // shaded fold triangle for a touch of paper depth
+      var foldGrad = ctx.createLinearGradient(w / 2 - fold, -h / 2, w / 2, -h / 2 + fold);
+      foldGrad.addColorStop(0, 'rgba(20, 31, 72, 0.02)');
+      foldGrad.addColorStop(1, 'rgba(20, 31, 72, 0.1)');
+      ctx.beginPath();
+      ctx.moveTo(w / 2 - fold, -h / 2);
+      ctx.lineTo(w / 2, -h / 2 + fold);
+      ctx.lineTo(w / 2 - fold, -h / 2 + fold);
+      ctx.closePath();
+      ctx.fillStyle = foldGrad;
+      ctx.fill();
+
       if (i === 0) {
-        ctx.strokeStyle = palette.teal;
-        ctx.lineWidth = 1.4;
-        for (var l = 0; l < 4; l++) {
+        ctx.strokeStyle = palette.lineStrong;
+        ctx.lineWidth = 1.6;
+        ctx.lineCap = 'round';
+        var lineLens = [0.78, 0.62, 0.7, 0.4];
+        for (var l = 0; l < lineLens.length; l++) {
           ctx.beginPath();
-          ctx.moveTo(-w / 2 + 26, -h / 2 + 40 + l * 20);
-          ctx.lineTo(w / 2 - 40 - (l === 3 ? 60 : 0), -h / 2 + 40 + l * 20);
+          ctx.moveTo(-w / 2 + 26, -h / 2 + 42 + l * 21);
+          ctx.lineTo(-w / 2 + 26 + (w - 52) * lineLens[l], -h / 2 + 42 + l * 21);
           ctx.stroke();
         }
+        ctx.strokeStyle = palette.teal;
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(-w / 2 + 26, -h / 2 + 42);
+        ctx.lineTo(-w / 2 + 26 + (w - 52) * lineLens[0], -h / 2 + 42);
+        ctx.stroke();
+
         ctx.fillStyle = palette.amber;
         ctx.beginPath();
-        ctx.arc(w / 2 - 34, -h / 2 + 18, 5, 0, Math.PI * 2);
+        ctx.arc(w / 2 - 40, -h / 2 + 20, 5, 0, Math.PI * 2);
         ctx.fill();
       }
       ctx.restore();
