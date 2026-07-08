@@ -113,10 +113,19 @@
     box-shadow: 0 1px 2px hsl(224 40% 10% / 0.04);
   }
 
-  .canvas-frame canvas {
+  .canvas-frame canvas,
+  .canvas-frame video {
     display: block;
     width: 100%;
     height: 100%;
+    object-fit: cover;
+  }
+
+  .cs-video-wash {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.6);
+    pointer-events: none;
   }
 
   .card-meta {
@@ -328,11 +337,11 @@
   <div class="masthead">
     <div>
       <p class="eyebrow">Capptions &middot; blog cover system</p>
-      <h1>One generated cover, six motifs, zero cropped photos.</h1>
+      <h1>Six looping covers, generated once, zero cropped photos.</h1>
     </div>
     <div class="rationale">
-      <div><strong>Why generated, not photographic.</strong> No source image ever needs cropping, licensing, or sourcing, each cover renders live from the post's title and index.</div>
-      <div><strong>Palette.</strong> Capptions navy + one teal accent, matching the site and the Seveso landing page. No stock-photo drift.</div>
+      <div><strong>Why a generated loop, not a photo.</strong> No source image ever needs cropping, licensing, or sourcing per post. Six premium motion loops, generated once, reused across every article, so per-post cost stays at zero.</div>
+      <div><strong>Palette.</strong> Capptions' real tokens: teal (hsl 174 100% 35%) as the accent, white background, matching the live site, not the Seveso landing page's own theme.</div>
     </div>
   </div>
 
@@ -348,383 +357,73 @@
   <div class="footer-note">
     <div>
       <h4>Rotation logic</h4>
-      Each post picks its variant from <code>hash(slug) % 6</code>, so a given article always renders the same cover on rebuild, but the sequence across the blog index feels varied rather than repetitive. Seeded per-post, not per-load, no flicker between visits.
+      Each post picks its motif from <code>hash(slug) % 6</code>, so a given article always renders the same loop on rebuild, but the sequence across the blog index feels varied rather than repetitive.
     </div>
     <div>
       <h4>Build notes</h4>
-      Rendered on <code>&lt;canvas&gt;</code>, no external image requests. Respects <code>prefers-reduced-motion</code> (drawn once, static). Same component drives both the blog index card and the post detail hero, fixing the crop bug at the root by removing the raster image entirely.
+      Six .mp4 loops, generated once via Higgsfield, reused across every post, not one per article. Respects <code>prefers-reduced-motion</code> (loads a frame, then freezes instead of playing). Same six loops drive both the blog index card and the post detail hero, and the case-study lockup on top.
     </div>
   </div>
 </div>
 
 <script>
 (function () {
-  var W = 640, H = 360; // internal render resolution, scaled by CSS to fill the frame
-
-  // capptions.com is a WHITE / light-neutral site with one strong teal accent
-  // (hsl 174 100% 35%). Indigo (hsl 226 57%) is a TEXT color there, not a
-  // background, so the covers stay light, teal does the work.
-  var palette = {
-    bgTop: '#ffffff',
-    bgBottom: '#eaf9f6',
-    line: 'rgba(20, 31, 72, 0.07)',
-    lineStrong: 'rgba(20, 31, 72, 0.16)',
-    teal: '#00b2a1',
-    tealSoft: 'rgba(0, 178, 161, 0.28)',
-    amber: '#e0821f',
-    ink: '#141f48',
-    inkFaint: 'rgba(20, 31, 72, 0.5)'
-  };
-
-  function seeded(seed) {
-    var s = seed % 2147483647;
-    if (s <= 0) s += 2147483646;
-    return function () {
-      s = (s * 16807) % 2147483647;
-      return (s - 1) / 2147483646;
-    };
-  }
+  var variants = [
+    { name: 'Audit grid', video: 'videos/audit-grid.mp4', blurb: 'Blueprint grid with a checked cell lighting up, for audit, checklist, and management-system posts.' },
+    { name: 'Signal beacon', video: 'videos/beacon.mp4', blurb: 'A status core emitting rings, echoes the stoplicht motif from the Seveso landing page.' },
+    { name: 'Data stream', video: 'videos/data-stream.mp4', blurb: 'Metric bars sliding across rows, for compliance-tracking and reporting topics.' },
+    { name: 'Infrastructure network', video: 'videos/network.mp4', blurb: 'Connected nodes drifting and re-linking, the VBS-as-system metaphor, for platform and integration posts.' },
+    { name: 'Document stack', video: 'videos/doc-stack.mp4', blurb: 'A stack of certificates fanning gently, for standards, certification, and policy posts.' },
+    { name: 'Zoning contour', video: 'videos/contour.mp4', blurb: 'Rippling hazard-perimeter lines, for Seveso/BRZO risk-zoning and industrial-site content.' }
+  ];
 
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  function bgWash(ctx, index) {
-    var g = ctx.createLinearGradient(0, 0, W, H);
-    var tilt = (index % 3) * 0.08;
-    g.addColorStop(0, palette.bgTop);
-    g.addColorStop(0.6 + tilt, palette.bgTop);
-    g.addColorStop(1, palette.bgBottom);
-    ctx.fillStyle = g;
-    ctx.fillRect(0, 0, W, H);
+  function makeVideo(src) {
+    var v = document.createElement('video');
+    v.src = src;
+    v.muted = true;
+    v.playsInline = true;
+    v.loop = true;
+    v.preload = 'auto';
+    if (reduceMotion) {
+      // load a frame, then freeze, motion is felt through the still
+      // composition rather than played, per prefers-reduced-motion
+      v.addEventListener('loadeddata', function () { v.pause(); }, { once: true });
+    } else {
+      v.autoplay = true;
+      v.play().catch(function () {});
+    }
+    return v;
   }
-
-  // --- Variant 0: Audit grid --- cells sequentially light up green, like rows being checked off
-  var auditState = {};
-  function drawAuditGrid(ctx, t, index) {
-    bgWash(ctx, index);
-    var step = 40, cols = W / step, rows = H / step;
-    if (!auditState[index]) {
-      var order = [];
-      for (var c = 0; c < cols; c++) for (var r = 0; r < rows; r++) order.push({ c: c, r: r });
-      var rng0 = seeded(index * 7 + 3);
-      for (var s = order.length - 1; s > 0; s--) {
-        var j = Math.floor(rng0() * (s + 1));
-        var tmp = order[s]; order[s] = order[j]; order[j] = tmp;
-      }
-      auditState[index] = order;
-    }
-    var order = auditState[index];
-    ctx.strokeStyle = palette.line;
-    ctx.lineWidth = 1;
-    for (var x = 0; x <= W; x += step) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); }
-    for (var y = 0; y <= H; y += step) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke(); }
-
-    var cycle = 2.2; // seconds per cell reveal
-    var speed = reduceMotion ? 0 : t / cycle;
-    var lit = reduceMotion ? Math.floor(order.length * 0.4) : speed % order.length;
-    order.forEach(function (cell, i) {
-      var since = (lit - i + order.length) % order.length;
-      if (since > order.length * 0.7) return; // not yet lit this loop
-      var fade = Math.max(0, 1 - since / (order.length * 0.55));
-      var flash = since < 1 ? (1 - since) : 0; // bright flash on the frame it lights
-      ctx.fillStyle = 'rgba(0, 178, 161,' + (0.06 + fade * 0.2) + ')';
-      ctx.fillRect(cell.c * step, cell.r * step, step, step);
-      if (flash > 0) {
-        ctx.fillStyle = 'rgba(0, 178, 161,' + (flash * 0.55) + ')';
-        ctx.fillRect(cell.c * step, cell.r * step, step, step);
-      }
-    });
-
-    var cx0 = W * 0.52, cy0 = H * 0.48;
-    var pulse = reduceMotion ? 1 : 0.85 + Math.sin(t * 1.6) * 0.15;
-    ctx.save();
-    ctx.translate(cx0, cy0);
-    ctx.scale(pulse, pulse);
-    ctx.strokeStyle = palette.teal;
-    ctx.lineWidth = 6;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-    ctx.beginPath();
-    ctx.moveTo(-38, 2);
-    ctx.lineTo(-12, 28);
-    ctx.lineTo(42, -34);
-    ctx.stroke();
-    ctx.restore();
-    ctx.beginPath();
-    ctx.arc(cx0, cy0, 70, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(0, 178, 161, 0.22)';
-    ctx.lineWidth = 1.5;
-    ctx.stroke();
-  }
-
-  // --- Variant 1: Signal beacon --- rings actively transmit outward, core pulses on each broadcast
-  function drawBeacon(ctx, t, index) {
-    bgWash(ctx, index);
-    var cx = W * 0.28 + (index % 2) * W * 0.44;
-    var cy = H * 0.5;
-    var period = 4.2;
-    var travel = reduceMotion ? 0.5 : (t % period) / period; // 0..1 per broadcast
-    var maxR = 260;
-
-    // 2 rings in flight at staggered offsets, slow and deliberate rather than frantic
-    for (var k = 0; k < 2; k++) {
-      var off = (travel + k / 2) % 1;
-      var r = 20 + off * maxR;
-      var alpha = (1 - off) * 0.4;
-      ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(0, 178, 161,' + Math.max(alpha, 0) + ')';
-      ctx.lineWidth = 2.5;
-      ctx.stroke();
-    }
-
-    var corePulse = reduceMotion ? 1 : 0.75 + Math.abs(Math.sin(t * Math.PI / period)) * 0.3;
-    var coreGlow = ctx.createRadialGradient(cx, cy, 2, cx, cy, 46 * corePulse);
-    coreGlow.addColorStop(0, palette.teal);
-    coreGlow.addColorStop(0.55, palette.teal);
-    coreGlow.addColorStop(1, 'rgba(0, 178, 161, 0)');
-    ctx.fillStyle = coreGlow;
-    ctx.beginPath();
-    ctx.arc(cx, cy, 46 * corePulse, 0, Math.PI * 2);
-    ctx.fill();
-
-    // amber status tick blinks on its own slower cadence (semantic accent, not competing brand color)
-    var blink = reduceMotion ? 1 : (Math.sin(t * 0.9) > 0.3 ? 1 : 0.15);
-    ctx.fillStyle = 'rgba(242, 169, 60,' + blink + ')';
-    ctx.beginPath();
-    ctx.arc(cx + 90, cy - 70, 4, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // --- Variant 2: Data stream --- bars visibly scroll left/right, alternating by row
-  function drawDataStream(ctx, t, index) {
-    bgWash(ctx, index);
-    var rng = seeded(index * 13 + 9);
-    ctx.strokeStyle = palette.line;
-    for (var y = 30; y < H; y += 26) {
-      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
-    }
-    var rows = 7;
-    var speedPx = reduceMotion ? 0 : 46; // px/sec
-    for (var i = 0; i < rows; i++) {
-      var y0 = 40 + i * 40;
-      var w = 70 + rng() * 160;
-      var dir = i % 2 === 0 ? 1 : -1;
-      var travel = (t * speedPx * dir) % (W + w);
-      var x = dir === 1 ? (travel - w) : (W - ((-travel) % (W + w)));
-      // wrap into a clean -w..W range
-      x = ((x % (W + w)) + (W + w)) % (W + w) - w;
-      ctx.fillStyle = i % 3 === 0 ? palette.teal : 'rgba(0, 178, 161, 0.45)';
-      ctx.fillRect(x, y0, w, 8);
-      ctx.fillStyle = palette.inkFaint;
-      ctx.fillRect(x + (dir === 1 ? w + 10 : -16), y0 + 1, 5, 6);
-    }
-  }
-
-  // --- Variant 3: Network / infrastructure nodes --- nodes drift and re-link continuously
-  var netState = {};
-  function drawNetwork(ctx, t, index) {
-    bgWash(ctx, index);
-    if (!netState[index]) {
-      var rng = seeded(index * 17 + 41);
-      var nodes = [];
-      var count = 9;
-      for (var i = 0; i < count; i++) {
-        nodes.push({
-          x: 60 + rng() * (W - 120), y: 50 + rng() * (H - 100),
-          vx: (rng() - 0.5) * 14, vy: (rng() - 0.5) * 14,
-          r: 3 + rng() * 3
-        });
-      }
-      netState[index] = nodes;
-    }
-    var nodes = netState[index];
-    var speed = reduceMotion ? 0 : 1;
-    nodes.forEach(function (n) {
-      var x = n.x + n.vx * t * speed, y = n.y + n.vy * t * speed;
-      // reflect within bounds so motion is continuous, not a snap-back
-      var rangeX = W - 120, rangeY = H - 100;
-      var px = ((x - 60) % (2 * rangeX) + 2 * rangeX) % (2 * rangeX);
-      var py = ((y - 50) % (2 * rangeY) + 2 * rangeY) % (2 * rangeY);
-      n.cx = 60 + (px > rangeX ? 2 * rangeX - px : px);
-      n.cy = 50 + (py > rangeY ? 2 * rangeY - py : py);
-    });
-    ctx.strokeStyle = palette.lineStrong;
-    ctx.lineWidth = 1.2;
-    for (var a = 0; a < nodes.length; a++) {
-      for (var b = a + 1; b < nodes.length; b++) {
-        var dx = nodes[a].cx - nodes[b].cx, dy = nodes[a].cy - nodes[b].cy;
-        var dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 190) {
-          ctx.globalAlpha = 1 - dist / 190;
-          ctx.beginPath();
-          ctx.moveTo(nodes[a].cx, nodes[a].cy);
-          ctx.lineTo(nodes[b].cx, nodes[b].cy);
-          ctx.stroke();
-          ctx.globalAlpha = 1;
-        }
-      }
-    }
-    nodes.forEach(function (n, i) {
-      var pulse = reduceMotion ? 0 : Math.sin(t * 1.2 + i) * 1.4;
-      ctx.fillStyle = i === 0 ? palette.teal : palette.inkFaint;
-      ctx.beginPath();
-      ctx.arc(n.cx, n.cy, n.r + pulse, 0, Math.PI * 2);
-      ctx.fill();
-    });
-  }
-
-  // --- Variant 4: Document stack --- fans open and closed slowly, like a hand of cards breathing
-  function drawDocStack(ctx, t, index) {
-    bgWash(ctx, index);
-    var cx = W * 0.5, cy = H * 0.56;
-    var sheets = 4;
-    // smoothstep easing on the sine, so the breathing has a soft rest at each
-    // end instead of the constant-velocity feel of a raw sine wave
-    var raw = reduceMotion ? 0.5 : (Math.sin(t * 0.45) + 1) / 2;
-    var breathe = raw * raw * (3 - 2 * raw);
-
-    for (var i = sheets - 1; i >= 0; i--) {
-      var spread = 0.4 + breathe * 0.6;
-      var offset = i * 15 * spread;
-      var fanAngle = (i - (sheets - 1) / 2) * 0.055 * spread;
-      var w = 212, h = 152, fold = 24, radius = 6;
-
-      ctx.save();
-      ctx.translate(cx - offset, cy - offset * 0.6);
-      ctx.rotate(fanAngle);
-
-      // soft drop shadow per sheet, stronger on top, so the stack reads as
-      // physical layered paper rather than flat overlapping rectangles
-      ctx.shadowColor = 'rgba(20, 31, 72, ' + (0.22 - i * 0.045) + ')';
-      ctx.shadowBlur = 18 - i * 2;
-      ctx.shadowOffsetY = 8 - i * 1.2;
-
-      ctx.beginPath();
-      ctx.moveTo(-w / 2 + radius, -h / 2);
-      ctx.lineTo(w / 2 - fold, -h / 2);
-      ctx.lineTo(w / 2, -h / 2 + fold);
-      ctx.lineTo(w / 2, h / 2 - radius);
-      ctx.quadraticCurveTo(w / 2, h / 2, w / 2 - radius, h / 2);
-      ctx.lineTo(-w / 2 + radius, h / 2);
-      ctx.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 2 - radius);
-      ctx.lineTo(-w / 2, -h / 2 + radius);
-      ctx.quadraticCurveTo(-w / 2, -h / 2, -w / 2 + radius, -h / 2);
-      ctx.closePath();
-
-      var sheetFill = i === 0 ? '#ffffff' : 'rgba(255,255,255,' + (0.5 + i * 0.12) + ')';
-      ctx.fillStyle = sheetFill;
-      ctx.fill();
-      ctx.shadowColor = 'transparent'; // stroke shouldn't also cast a shadow
-      ctx.strokeStyle = i === 0 ? palette.lineStrong : palette.line;
-      ctx.lineWidth = 1.2;
-      ctx.stroke();
-
-      // shaded fold triangle for a touch of paper depth
-      var foldGrad = ctx.createLinearGradient(w / 2 - fold, -h / 2, w / 2, -h / 2 + fold);
-      foldGrad.addColorStop(0, 'rgba(20, 31, 72, 0.02)');
-      foldGrad.addColorStop(1, 'rgba(20, 31, 72, 0.1)');
-      ctx.beginPath();
-      ctx.moveTo(w / 2 - fold, -h / 2);
-      ctx.lineTo(w / 2, -h / 2 + fold);
-      ctx.lineTo(w / 2 - fold, -h / 2 + fold);
-      ctx.closePath();
-      ctx.fillStyle = foldGrad;
-      ctx.fill();
-
-      if (i === 0) {
-        ctx.strokeStyle = palette.lineStrong;
-        ctx.lineWidth = 1.6;
-        ctx.lineCap = 'round';
-        var lineLens = [0.78, 0.62, 0.7, 0.4];
-        for (var l = 0; l < lineLens.length; l++) {
-          ctx.beginPath();
-          ctx.moveTo(-w / 2 + 26, -h / 2 + 42 + l * 21);
-          ctx.lineTo(-w / 2 + 26 + (w - 52) * lineLens[l], -h / 2 + 42 + l * 21);
-          ctx.stroke();
-        }
-        ctx.strokeStyle = palette.teal;
-        ctx.lineWidth = 1.8;
-        ctx.beginPath();
-        ctx.moveTo(-w / 2 + 26, -h / 2 + 42);
-        ctx.lineTo(-w / 2 + 26 + (w - 52) * lineLens[0], -h / 2 + 42);
-        ctx.stroke();
-
-        ctx.fillStyle = palette.amber;
-        ctx.beginPath();
-        ctx.arc(w / 2 - 40, -h / 2 + 20, 5, 0, Math.PI * 2);
-        ctx.fill();
-      }
-      ctx.restore();
-    }
-  }
-
-  // --- Variant 5: Zoning contour --- hazard-perimeter lines ripple visibly across the frame
-  function drawContour(ctx, t, index) {
-    bgWash(ctx, index);
-    var rng = seeded(index * 23 + 5);
-    var bands = 6;
-    var speed = reduceMotion ? 0 : t * 1.1;
-    for (var b = 0; b < bands; b++) {
-      var baseY = 60 + b * 44;
-      var amp = 22 + rng() * 14;
-      var freq = 0.014 + rng() * 0.008;
-      var phase = rng() * Math.PI * 2 + speed * (0.6 + (b % 2) * 0.5) * (b % 2 === 0 ? 1 : -1);
-      ctx.beginPath();
-      for (var x = 0; x <= W; x += 6) {
-        var y = baseY + Math.sin(x * freq + phase) * amp;
-        if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
-      }
-      ctx.strokeStyle = b === 2 ? palette.teal : 'rgba(0, 178, 161,' + (0.12 + b * 0.035) + ')';
-      ctx.lineWidth = b === 2 ? 2.6 : 1.5;
-      ctx.stroke();
-    }
-  }
-
-  var variants = [
-    { name: 'Audit grid', fn: drawAuditGrid, blurb: 'Blueprint grid with a checked cell, for audit, checklist, and management-system posts.' },
-    { name: 'Signal beacon', fn: drawBeacon, blurb: 'Concentric rings around a status core, echoes the stoplicht motif from the Seveso landing page.' },
-    { name: 'Data stream', fn: drawDataStream, blurb: 'Scanlines with drifting metric ticks, for compliance-tracking and reporting topics.' },
-    { name: 'Infrastructure network', fn: drawNetwork, blurb: 'Connected nodes, the VBS-as-system metaphor, for platform and integration posts.' },
-    { name: 'Document stack', fn: drawDocStack, blurb: 'Layered certificates with a folded corner, for standards, certification, and policy posts.' },
-    { name: 'Zoning contour', fn: drawContour, blurb: 'Topographic hazard-perimeter lines, for Seveso/BRZO risk-zoning and industrial-site content.' }
-  ];
 
   var grid = document.getElementById('grid');
-  var canvases = [];
-
   variants.forEach(function (v, i) {
     var card = document.createElement('div');
     card.className = 'card';
-    card.innerHTML =
-      '<div class="canvas-frame"><canvas width="' + W + '" height="' + H + '"></canvas></div>' +
-      '<div class="card-meta"><h3>' + v.name + '</h3><span>variant ' + (i) + '</span></div>' +
-      '<p>' + v.blurb + '</p>';
+    var frame = document.createElement('div');
+    frame.className = 'canvas-frame';
+    frame.appendChild(makeVideo(v.video));
+    card.appendChild(frame);
+    var meta = document.createElement('div');
+    meta.className = 'card-meta';
+    meta.innerHTML = '<h3>' + v.name + '</h3><span>variant ' + i + '</span>';
+    card.appendChild(meta);
+    var p = document.createElement('p');
+    p.textContent = v.blurb;
+    card.appendChild(p);
     grid.appendChild(card);
-    var ctx = card.querySelector('canvas').getContext('2d');
-    canvases.push({ ctx: ctx, fn: v.fn, index: i });
   });
 
-  // Case-study covers: real Capptions mark x client wordmark, over a muted
-  // version of the same generative backdrop (dimmed so the lockup reads first,
-  // image still generated live, same system as the article covers).
+  // Case-study covers: real Capptions mark x client wordmark, over the same
+  // generated loops used for the articles (reused, not unique per post) with
+  // a light wash so the lockup reads first.
   var CAPPTIONS_ICON_SVG =
     '<svg viewBox="0 0 547 545" xmlns="http://www.w3.org/2000/svg" class="cx-icon">' +
     '<path d="M509.819 136.187H328.132V327.527H427.897C408.362 382.914 359.99 424.645 300.86 434.591V544.85C438.675 531.137 546.308 414.597 546.308 272.858C546.308 223.069 533.026 176.393 509.819 136.187Z" fill="#FF4444"/>' +
     '<path d="M0.867004 272.858C0.867004 322.647 14.149 369.323 37.356 409.53H219.043V218.19H119.278C138.813 162.802 187.186 121.072 246.315 111.125V0.867188C108.501 14.5792 0.867004 131.12 0.867004 272.858Z" fill="#FF4444"/>' +
     '</svg>';
 
-  function withDimBackdrop(baseFn) {
-    return function (ctx, t, index) {
-      // slowed way down and washed out (light, not dark) so the logo
-      // lockup reads first, motion is felt more than seen
-      baseFn(ctx, t * 0.22, index);
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.62)';
-      ctx.fillRect(0, 0, W, H);
-    };
-  }
-
-  // ambient patterns only, no bold single-shape variant (audit checkmark,
-  // beacon core) that would compete with the logo lockup on top
   var caseStudies = [
     { customer: 'Ardagh Group', industry: 'Metal & glass packaging', result: '<strong>4&times; faster</strong> 5S audits across sites', variant: 3 },
     { customer: 'Natures Pride', industry: 'Fresh produce, logistics', result: '<strong>50% time savings</strong> on inspection rounds', variant: 2 },
@@ -732,32 +431,35 @@
   ];
 
   var csGrid = document.getElementById('cs-grid');
-  caseStudies.forEach(function (cs, i) {
+  caseStudies.forEach(function (cs) {
     var card = document.createElement('div');
     card.className = 'cs-card';
-    card.innerHTML =
-      '<div class="canvas-frame">' +
-        '<canvas width="' + W + '" height="' + H + '"></canvas>' +
-        '<div class="cs-lockup">' + CAPPTIONS_ICON_SVG +
-          '<div class="cx-connector"></div>' +
-          '<span class="cx-client">' + cs.customer + '</span>' +
-        '</div>' +
-      '</div>' +
-      '<div class="card-meta"><h3>' + cs.customer + '</h3><span class="cs-industry">' + cs.industry + '</span></div>' +
-      '<p class="cs-result">' + cs.result + '</p>' +
-      '<a class="cs-cta" href="#">Read the full story &rarr;</a>';
+    var frame = document.createElement('div');
+    frame.className = 'canvas-frame';
+    frame.appendChild(makeVideo(variants[cs.variant].video));
+    var wash = document.createElement('div');
+    wash.className = 'cs-video-wash';
+    frame.appendChild(wash);
+    var lockup = document.createElement('div');
+    lockup.className = 'cs-lockup';
+    lockup.innerHTML = CAPPTIONS_ICON_SVG + '<div class="cx-connector"></div><span class="cx-client">' + cs.customer + '</span>';
+    frame.appendChild(lockup);
+    card.appendChild(frame);
+    var meta = document.createElement('div');
+    meta.className = 'card-meta';
+    meta.innerHTML = '<h3>' + cs.customer + '</h3><span class="cs-industry">' + cs.industry + '</span>';
+    card.appendChild(meta);
+    var result = document.createElement('p');
+    result.className = 'cs-result';
+    result.innerHTML = cs.result;
+    card.appendChild(result);
+    var cta = document.createElement('a');
+    cta.className = 'cs-cta';
+    cta.href = '#';
+    cta.innerHTML = 'Read the full story &rarr;';
+    card.appendChild(cta);
     csGrid.appendChild(card);
-    var ctx = card.querySelector('canvas').getContext('2d');
-    var baseFn = withDimBackdrop(variants[cs.variant].fn);
-    canvases.push({ ctx: ctx, fn: baseFn, index: 100 + i });
   });
-
-  var start = performance.now();
-  function frame(now) {
-    var t = (now - start) / 1000;
-    canvases.forEach(function (c) { c.fn(c.ctx, t, c.index); });
-    if (!reduceMotion) requestAnimationFrame(frame);
-  }
-  requestAnimationFrame(frame);
 })();
+</script>
 </script>
