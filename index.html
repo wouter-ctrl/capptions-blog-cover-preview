@@ -108,8 +108,9 @@
     aspect-ratio: 16 / 9;
     border-radius: 10px;
     overflow: hidden;
-    background: var(--navy-deep);
-    box-shadow: 0 1px 2px hsl(224 40% 10% / 0.06), 0 12px 28px -18px hsl(224 50% 15% / 0.45);
+    background: #ffffff;
+    border: 1px solid var(--paper-line);
+    box-shadow: 0 1px 2px hsl(224 40% 10% / 0.04);
   }
 
   .canvas-frame canvas {
@@ -288,7 +289,7 @@
     width: 30px;
     height: 2px;
     position: relative;
-    background: rgba(226, 234, 250, 0.16);
+    background: rgba(20, 31, 72, 0.14);
     border-radius: 2px;
     overflow: hidden;
   }
@@ -318,7 +319,7 @@
     font-size: 19px;
     font-weight: 700;
     letter-spacing: -0.01em;
-    color: rgba(226, 234, 250, 0.92);
+    color: var(--navy-deep);
     white-space: nowrap;
   }
 </style>
@@ -360,18 +361,19 @@
 (function () {
   var W = 640, H = 360; // internal render resolution, scaled by CSS to fill the frame
 
-  // matches capptions.com's real design tokens: --navy (indigo) hsl(226 57% 8-21%),
-  // --teal hsl(174 100% 35%), pulled straight from the live site's CSS
+  // capptions.com is a WHITE / light-neutral site with one strong teal accent
+  // (hsl 174 100% 35%). Indigo (hsl 226 57%) is a TEXT color there, not a
+  // background, so the covers stay light, teal does the work.
   var palette = {
-    navyDeep: '#090e20',
-    navy: '#141f48',
-    navySoft: '#233264',
-    line: 'rgba(150, 170, 210, 0.16)',
-    lineStrong: 'rgba(170, 190, 225, 0.28)',
+    bgTop: '#ffffff',
+    bgBottom: '#eaf9f6',
+    line: 'rgba(20, 31, 72, 0.07)',
+    lineStrong: 'rgba(20, 31, 72, 0.16)',
     teal: '#00b2a1',
-    tealSoft: 'rgba(0, 178, 161, 0.35)',
-    amber: '#f2a93c',
-    paper: 'rgba(226, 234, 250, 0.9)'
+    tealSoft: 'rgba(0, 178, 161, 0.28)',
+    amber: '#e0821f',
+    ink: '#141f48',
+    inkFaint: 'rgba(20, 31, 72, 0.5)'
   };
 
   function seeded(seed) {
@@ -388,9 +390,9 @@
   function bgWash(ctx, index) {
     var g = ctx.createLinearGradient(0, 0, W, H);
     var tilt = (index % 3) * 0.08;
-    g.addColorStop(0, palette.navyDeep);
-    g.addColorStop(0.55 + tilt, palette.navy);
-    g.addColorStop(1, palette.navySoft);
+    g.addColorStop(0, palette.bgTop);
+    g.addColorStop(0.6 + tilt, palette.bgTop);
+    g.addColorStop(1, palette.bgBottom);
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, W, H);
   }
@@ -424,10 +426,10 @@
       if (since > order.length * 0.7) return; // not yet lit this loop
       var fade = Math.max(0, 1 - since / (order.length * 0.55));
       var flash = since < 1 ? (1 - since) : 0; // bright flash on the frame it lights
-      ctx.fillStyle = 'rgba(0, 178, 161,' + (0.05 + fade * 0.16) + ')';
+      ctx.fillStyle = 'rgba(0, 178, 161,' + (0.06 + fade * 0.2) + ')';
       ctx.fillRect(cell.c * step, cell.r * step, step, step);
       if (flash > 0) {
-        ctx.fillStyle = 'rgba(180, 255, 230,' + (flash * 0.5) + ')';
+        ctx.fillStyle = 'rgba(0, 178, 161,' + (flash * 0.55) + ')';
         ctx.fillRect(cell.c * step, cell.r * step, step, step);
       }
     });
@@ -477,8 +479,8 @@
 
     var corePulse = reduceMotion ? 1 : 0.75 + Math.abs(Math.sin(t * Math.PI / period)) * 0.3;
     var coreGlow = ctx.createRadialGradient(cx, cy, 2, cx, cy, 46 * corePulse);
-    coreGlow.addColorStop(0, '#eafff6');
-    coreGlow.addColorStop(0.4, palette.teal);
+    coreGlow.addColorStop(0, palette.teal);
+    coreGlow.addColorStop(0.55, palette.teal);
     coreGlow.addColorStop(1, 'rgba(0, 178, 161, 0)');
     ctx.fillStyle = coreGlow;
     ctx.beginPath();
@@ -513,7 +515,7 @@
       x = ((x % (W + w)) + (W + w)) % (W + w) - w;
       ctx.fillStyle = i % 3 === 0 ? palette.teal : 'rgba(0, 178, 161, 0.45)';
       ctx.fillRect(x, y0, w, 8);
-      ctx.fillStyle = 'rgba(226, 234, 250, 0.5)';
+      ctx.fillStyle = palette.inkFaint;
       ctx.fillRect(x + (dir === 1 ? w + 10 : -16), y0 + 1, 5, 6);
     }
   }
@@ -564,7 +566,7 @@
     }
     nodes.forEach(function (n, i) {
       var pulse = reduceMotion ? 0 : Math.sin(t * 1.2 + i) * 1.4;
-      ctx.fillStyle = i === 0 ? palette.teal : palette.paper;
+      ctx.fillStyle = i === 0 ? palette.teal : palette.inkFaint;
       ctx.beginPath();
       ctx.arc(n.cx, n.cy, n.r + pulse, 0, Math.PI * 2);
       ctx.fill();
@@ -585,7 +587,7 @@
       ctx.translate(cx - offset, cy - offset * 0.6);
       ctx.rotate(fanAngle);
       var w = 210, h = 150;
-      ctx.fillStyle = i === 0 ? 'rgba(226,234,250,0.95)' : 'rgba(226,234,250,' + (0.18 + i * 0.06) + ')';
+      ctx.fillStyle = i === 0 ? '#ffffff' : 'rgba(255,255,255,' + (0.55 + i * 0.1) + ')';
       ctx.beginPath();
       ctx.moveTo(-w / 2, -h / 2);
       ctx.lineTo(w / 2 - 22, -h / 2);
@@ -594,6 +596,9 @@
       ctx.lineTo(-w / 2, h / 2);
       ctx.closePath();
       ctx.fill();
+      ctx.strokeStyle = i === 0 ? palette.lineStrong : palette.line;
+      ctx.lineWidth = 1.2;
+      ctx.stroke();
       if (i === 0) {
         ctx.strokeStyle = palette.teal;
         ctx.lineWidth = 1.4;
@@ -669,10 +674,10 @@
 
   function withDimBackdrop(baseFn) {
     return function (ctx, t, index) {
-      // slowed way down and dimmed hard so the logo lockup reads first,
-      // motion is felt more than seen
+      // slowed way down and washed out (light, not dark) so the logo
+      // lockup reads first, motion is felt more than seen
       baseFn(ctx, t * 0.22, index);
-      ctx.fillStyle = 'rgba(13, 18, 38, 0.78)';
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.62)';
       ctx.fillRect(0, 0, W, H);
     };
   }
