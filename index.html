@@ -8,10 +8,10 @@
     --ink: hsl(224 32% 12%);
     --paper: hsl(216 22% 96%);
     --paper-line: hsl(216 18% 88%);
-    --navy: hsl(224 46% 15%);
-    --navy-deep: hsl(226 52% 9%);
-    --teal: hsl(172 62% 45%);
-    --teal-soft: hsl(172 50% 68%);
+    --navy: hsl(226 57% 21%);
+    --navy-deep: hsl(226 57% 8%);
+    --teal: hsl(174 100% 35%);
+    --teal-soft: hsl(174 60% 68%);
     --amber: hsl(38 92% 58%);
     --mono: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", Consolas, monospace;
     --sans: -apple-system, "Segoe UI", "Inter", system-ui, sans-serif;
@@ -360,14 +360,16 @@
 (function () {
   var W = 640, H = 360; // internal render resolution, scaled by CSS to fill the frame
 
+  // matches capptions.com's real design tokens: --navy (indigo) hsl(226 57% 8-21%),
+  // --teal hsl(174 100% 35%), pulled straight from the live site's CSS
   var palette = {
-    navyDeep: '#0d1226',
-    navy: '#141c3a',
-    navySoft: '#232f57',
+    navyDeep: '#090e20',
+    navy: '#141f48',
+    navySoft: '#233264',
     line: 'rgba(150, 170, 210, 0.16)',
     lineStrong: 'rgba(170, 190, 225, 0.28)',
-    teal: '#2bcf9e',
-    tealSoft: 'rgba(43, 207, 158, 0.35)',
+    teal: '#00b2a1',
+    tealSoft: 'rgba(0, 178, 161, 0.35)',
     amber: '#f2a93c',
     paper: 'rgba(226, 234, 250, 0.9)'
   };
@@ -422,7 +424,7 @@
       if (since > order.length * 0.7) return; // not yet lit this loop
       var fade = Math.max(0, 1 - since / (order.length * 0.55));
       var flash = since < 1 ? (1 - since) : 0; // bright flash on the frame it lights
-      ctx.fillStyle = 'rgba(43, 207, 158,' + (0.05 + fade * 0.16) + ')';
+      ctx.fillStyle = 'rgba(0, 178, 161,' + (0.05 + fade * 0.16) + ')';
       ctx.fillRect(cell.c * step, cell.r * step, step, step);
       if (flash > 0) {
         ctx.fillStyle = 'rgba(180, 255, 230,' + (flash * 0.5) + ')';
@@ -447,7 +449,7 @@
     ctx.restore();
     ctx.beginPath();
     ctx.arc(cx0, cy0, 70, 0, Math.PI * 2);
-    ctx.strokeStyle = 'rgba(43, 207, 158, 0.22)';
+    ctx.strokeStyle = 'rgba(0, 178, 161, 0.22)';
     ctx.lineWidth = 1.5;
     ctx.stroke();
   }
@@ -468,7 +470,7 @@
       var alpha = (1 - off) * 0.4;
       ctx.beginPath();
       ctx.arc(cx, cy, r, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(43, 207, 158,' + Math.max(alpha, 0) + ')';
+      ctx.strokeStyle = 'rgba(0, 178, 161,' + Math.max(alpha, 0) + ')';
       ctx.lineWidth = 2.5;
       ctx.stroke();
     }
@@ -477,7 +479,7 @@
     var coreGlow = ctx.createRadialGradient(cx, cy, 2, cx, cy, 46 * corePulse);
     coreGlow.addColorStop(0, '#eafff6');
     coreGlow.addColorStop(0.4, palette.teal);
-    coreGlow.addColorStop(1, 'rgba(43, 207, 158, 0)');
+    coreGlow.addColorStop(1, 'rgba(0, 178, 161, 0)');
     ctx.fillStyle = coreGlow;
     ctx.beginPath();
     ctx.arc(cx, cy, 46 * corePulse, 0, Math.PI * 2);
@@ -509,7 +511,7 @@
       var x = dir === 1 ? (travel - w) : (W - ((-travel) % (W + w)));
       // wrap into a clean -w..W range
       x = ((x % (W + w)) + (W + w)) % (W + w) - w;
-      ctx.fillStyle = i % 3 === 0 ? palette.teal : 'rgba(43, 207, 158, 0.45)';
+      ctx.fillStyle = i % 3 === 0 ? palette.teal : 'rgba(0, 178, 161, 0.45)';
       ctx.fillRect(x, y0, w, 8);
       ctx.fillStyle = 'rgba(226, 234, 250, 0.5)';
       ctx.fillRect(x + (dir === 1 ? w + 10 : -16), y0 + 1, 5, 6);
@@ -626,7 +628,7 @@
         var y = baseY + Math.sin(x * freq + phase) * amp;
         if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
       }
-      ctx.strokeStyle = b === 2 ? palette.teal : 'rgba(43, 207, 158,' + (0.12 + b * 0.035) + ')';
+      ctx.strokeStyle = b === 2 ? palette.teal : 'rgba(0, 178, 161,' + (0.12 + b * 0.035) + ')';
       ctx.lineWidth = b === 2 ? 2.6 : 1.5;
       ctx.stroke();
     }
